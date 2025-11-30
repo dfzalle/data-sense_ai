@@ -1,55 +1,86 @@
 import { ThemeService } from './../../../_services/theme/theme.service';
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import moment from 'moment';
 import { UtilService } from '../../../_services/utils/util.service';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { NavigationEnd, NavigationStart, Router } from '@angular/router';
+import { NavigationStart, Router } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { ApiConstants } from './../../../_helpers/constants/api';
+import { HttpService } from '../../../_services/http/http.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [MatToolbarModule, MatButtonModule, MatIconModule, FormsModule, MatSlideToggleModule],
+  imports: [MatToolbarModule, MatButtonModule, MatIconModule, FormsModule, MatSlideToggleModule, CommonModule],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss'
 })
-export class HeaderComponent implements OnDestroy {
-  today: string = moment().format('MM/DD/YYYY') + ' 03:00';
+export class HeaderComponent implements OnDestroy, OnInit {
+  today: string = moment().format('MM/DD/YYYY HH:mm');
   private subscription: Subscription;
   toggleChecked: boolean = false;
-  dropDownValue = 'Call center DW';
+  databases: any[] = [];
+  selectedDatabase: string = '';
+  isLoadingDatabases: boolean = false;
   @Input()
   isMobile: boolean = false;
   @Output() sidenav: EventEmitter<any> = new EventEmitter();
+
   constructor(
     private util: UtilService,
     private theme: ThemeService,
-    private router: Router
+    private router: Router,
+    private http: HttpService
   ) {
     this.toggleChecked = this.theme.theme == 'light-theme' ? false : true;
-    this.setTimeDropDown(this.router.url);
     this.subscription = this.router.events.pipe(
       filter(event => event instanceof NavigationStart)
-    ).subscribe((res: any) => {
-      this.setTimeDropDown(res.url);
-      
+    ).subscribe(() => {
+      // Update timestamp on navigation
+      this.today = moment().format('MM/DD/YYYY HH:mm');
     });
   }
-  
 
-  setTimeDropDown(url: string) {
-    if (url.indexOf('/k-index') > -1) {
-      this.dropDownValue = 'Michigan Supreme Court RFP';
-      this.today = moment().format('MM/DD/YYYY') + ' 10:15';
-    } else {
-      this.dropDownValue = 'Call center DW';
-      this.today = moment().format('MM/DD/YYYY') + ' 03:15';
-    }
+  ngOnInit() {
+    this.loadDatabases();
+  }
+
+  loadDatabases() {
+    this.isLoadingDatabases = true;
+    this.http.getDatabases().subscribe({
+      next: (res: any) => {
+        this.databases = res.databases || [];
+        this.isLoadingDatabases = false;
+
+        if (this.databases.length > 0 && !this.selectedDatabase) {
+          // Try to find DataSense database as default, otherwise use first one
+          const dataSenseDb = this.databases.find(
+            (db: any) => db.database_name.toLowerCase() === 'datasense'
+          );
+          this.selectedDatabase = dataSenseDb ? dataSenseDb.database_name : this.databases[0].database_name;
+          ApiConstants.SELECTED_DATABASE = this.selectedDatabase;
+          // Notify components to load trending questions for the default database
+          this.util.notifyDatabaseChange(this.selectedDatabase);
+          this.util.notifyDropdownChange();
+        }
+      },
+      error: (err) => {
+        console.error('Error loading databases:', err);
+        this.isLoadingDatabases = false;
+        // Fallback to hardcoded options if API fails
+        this.databases = [
+          { database_name: 'DataSense' },
+          { database_name: 'Call Center DW' }
+        ];
+        this.selectedDatabase = 'DataSense';
+        ApiConstants.SELECTED_DATABASE = this.selectedDatabase;
+      }
+    });
   }
 
   themChange() {
@@ -63,27 +94,23 @@ export class HeaderComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this.subscription) {
-      alert('unsub');
       this.subscription.unsubscribe();
     }
   }
+
   toggle() {
     this.sidenav.emit();
   }
 
-  
+  onDatabaseChange(event: Event): void {
+    const selectedDb = (event.target as HTMLSelectElement).value;
+    this.selectedDatabase = selectedDb;
+    ApiConstants.SELECTED_DATABASE = selectedDb;
+    this.today = moment().format('MM/DD/YYYY HH:mm');
+    console.log('Source changed to:', selectedDb);
 
-  onVersionChange(event: Event): void {
-    const selectedVersion = (event.target as HTMLSelectElement).value;
-    ApiConstants.APIVERSION = selectedVersion;
-    if (selectedVersion == 'vc') {    
-      this.today = moment().format('MM/DD/YYYY') + ' 05:15';
-    } else {
-      this.today = moment().format('MM/DD/YYYY') + ' 03:15';
-    }
-    console.log('API version updated to:', ApiConstants.APIVERSION );
-     
+    // Notify components that database has changed
+    this.util.notifyDatabaseChange(selectedDb);
     this.util.notifyDropdownChange();
   }
-
 }

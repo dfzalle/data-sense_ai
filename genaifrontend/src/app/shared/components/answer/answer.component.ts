@@ -15,6 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DeleteDialogComponent } from '../../Modals/delete-dialog/delete-dialog.component';
 import { CommonModule } from '@angular/common';
 import ApexCharts from 'apexcharts';
+import { ApiConstants } from '../../../_helpers/constants/api';
 
 declare var Prism: any;
 declare var window: any;
@@ -45,10 +46,11 @@ export class AnswerComponent implements OnDestroy {
   chartRetry: number = 3;
   chartList: any = [];
   chartOptions: any = "";
+  selectedDatabase: string = '';
 
   dialogId: string = '';
   // showRelatedQuestion: boolean = false;
-  /** 
+  /**
    * For shareing url we are checking this Variable
   */
   // subscription: Subscription;
@@ -69,6 +71,10 @@ export class AnswerComponent implements OnDestroy {
         this.parentQuestionID = params.get('id') || "";
         if (navigation && navigation.extras.state) {
           questionStr = navigation.extras.state['question'] || "";
+          // Get database from navigation state or use current selection
+          this.selectedDatabase = navigation.extras.state['database'] || ApiConstants.SELECTED_DATABASE;
+        } else {
+          this.selectedDatabase = ApiConstants.SELECTED_DATABASE;
         }
         if (this.parentQuestionID) {
           this.initializeData();
@@ -77,7 +83,8 @@ export class AnswerComponent implements OnDestroy {
         else {
           this.answersList.push({
             response: {
-              question: questionStr
+              question: questionStr,
+              database: this.selectedDatabase
             }
           });
           this.getAnswer(questionStr);

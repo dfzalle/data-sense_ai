@@ -1,6 +1,7 @@
 export const ApiConstants = {
   API: 'http://localhost:8000/',
   _apiVersion: 'v2/',
+  _selectedDatabase: '',
   ORIGINAL_QUESTION : 'original-question',
   ADDITIONAL_INSIGHTS: 'additional-insights',
   FOLLOW_UP_QUESTION: 'follow-up-question',
@@ -12,6 +13,7 @@ export const ApiConstants = {
   RENAME_QUESTION: 'rename',
   DELETE_QUESTION: 'delete',
   TRENDING_QUESTIONS: 'trending-questions',
+  DATABASES: 'databases',
   LOGIN: 'validate-user',
   GETTAGS: 'get-tags',
   GETCHARTSIMG: 'get-chart-img',
@@ -26,6 +28,12 @@ export const ApiConstants = {
   },
   set APIVERSION(version: string) {
     this._apiVersion = version + '/';
+  },
+  get SELECTED_DATABASE() {
+    return this._selectedDatabase;
+  },
+  set SELECTED_DATABASE(database: string) {
+    this._selectedDatabase = database;
   }
 }
 

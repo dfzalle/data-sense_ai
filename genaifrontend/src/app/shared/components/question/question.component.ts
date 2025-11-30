@@ -8,9 +8,11 @@ import { FormsModule } from '@angular/forms';
 import { MatChipsModule } from '@angular/material/chips';
 
 /**Other dependencies */
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { UtilService } from '../../../_services/utils/util.service';
+import { ApiConstants } from '../../../_helpers/constants/api';
+import { Subscription } from 'rxjs';
 
 
 @Component({
@@ -27,40 +29,57 @@ import { UtilService } from '../../../_services/utils/util.service';
   templateUrl: './question.component.html',
   styleUrl: './question.component.scss'
 })
-export class QuestionComponent {
+export class QuestionComponent implements OnDestroy {
   question: string = "";
   trendingQuestion: any = [];
+  selectedDatabase: string = '';
+  private subscriptions: Subscription[] = [];
+
   constructor(
     private router: Router,
     private http: HttpService,
     private util: UtilService
   ) {
+    // Get initial database selection
+    this.selectedDatabase = ApiConstants.SELECTED_DATABASE;
     this.getTrending();
 
-     // Subscribe to the dropdown change event
-     this.util.dropdownChange$.subscribe(() => {
+    // Subscribe to the dropdown change event
+    const dropdownSub = this.util.dropdownChange$.subscribe(() => {
+      this.selectedDatabase = ApiConstants.SELECTED_DATABASE;
       this.getTrending();
     });
+    this.subscriptions.push(dropdownSub);
+
+    // Subscribe to database change event
+    const dbSub = this.util.databaseChange$.subscribe((dbName: string) => {
+      this.selectedDatabase = dbName;
+      this.getTrending();
+    });
+    this.subscriptions.push(dbSub);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   getTrending() {
-    this.http.getQuikInsights().subscribe((res) => {
-      console.log(res);
+    this.http.getQuikInsights(this.selectedDatabase).subscribe((res) => {
+      console.log('Trending questions for database:', this.selectedDatabase, res);
       this.trendingQuestion = res;
-    })
+    });
   }
 
   navigateAnswer() {
     if(this.question.trim()) {
       this.navigate(this.question);
-    } else {
-
     }
   }
 
   navigate(question: string) {
     this.router.navigateByUrl('insights', { replaceUrl: true, state: {
-      question: question
+      question: question,
+      database: this.selectedDatabase
     } });
   }
 

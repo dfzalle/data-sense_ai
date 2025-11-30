@@ -29,9 +29,17 @@ export class UtilService {
   private dropdownChangeSource = new Subject<void>();
   dropdownChange$ = this.dropdownChangeSource.asObservable();
 
+  private databaseChangeSource = new Subject<string>();
+  databaseChange$ = this.databaseChangeSource.asObservable();
+
   // Method to call when dropdown changes
   notifyDropdownChange() {
     this.dropdownChangeSource.next();
+  }
+
+  // Method to notify when database selection changes
+  notifyDatabaseChange(databaseName: string): void {
+    this.databaseChangeSource.next(databaseName);
   }
 
   /**

@@ -89,8 +89,13 @@ export class HttpService {
     return this.http.post(`${ApiConstants.API}${ApiConstants.APIVERSION}${ApiConstants.DELETE_QUESTION}`, deletQuestion);
   }
 
-  getQuikInsights() {
-    return this.http.post(`${ApiConstants.API}${ApiConstants.APIVERSION}${ApiConstants.TRENDING_QUESTIONS}`, {});
+  getQuikInsights(databaseName?: string) {
+    const body = databaseName ? { database_name: databaseName } : {};
+    return this.http.post(`${ApiConstants.API}${ApiConstants.APIVERSION}${ApiConstants.TRENDING_QUESTIONS}`, body);
+  }
+
+  getDatabases() {
+    return this.http.get(`${ApiConstants.API}${ApiConstants.APIVERSION}${ApiConstants.DATABASES}`);
   }
   
   getTags(questionId: string) {
