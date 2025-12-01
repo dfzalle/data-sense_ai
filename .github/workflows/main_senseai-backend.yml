@@ -22,7 +22,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        working-directory: API/testgenai-master
+        working-directory: ./API/testgenai-master
         run: |
           python -m venv venv
           source venv/bin/activate
@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-app
-          path: API/testgenai-master/
+          path: ./API/testgenai-master/
 
   deploy:
     runs-on: ubuntu-latest
